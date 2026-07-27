@@ -13,7 +13,7 @@ workflows:
       cocoapods: default
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.wiz37.moonlightmix
+        bundle_identifier: com.davidwis.moonlightmix
       vars:
         BUNDLE_ID: com.davidwis.moonlightmix
         XCODE_WORKSPACE: ios/App/App.xcworkspace
