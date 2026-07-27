@@ -11,66 +11,97 @@ workflows:
       node: 22
       xcode: latest
       cocoapods: default
+
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.davidwis.moonlightmix
+        certificates:
+          - moonlight_mix_distribution
+        provisioning_profiles:
+          - moonlight_mix_appstore
+
       vars:
         BUNDLE_ID: com.davidwis.moonlightmix
         XCODE_WORKSPACE: ios/App/App.xcworkspace
         XCODE_SCHEME: App
+        APP_VERSION: 1.0.0
 
     scripts:
       - name: Install dependencies
-        script: npm install
+        script: |
+          #!/bin/bash
+          set -e
+          npm install
 
       - name: Type-check and build web app
-        script: npm run build
+        script: |
+          #!/bin/bash
+          set -e
+          npm run build
 
       - name: Create and sync Capacitor iOS project
         script: |
-          if [ ! -d ios ]; then
+          #!/bin/bash
+          set -e
+
+          if [ ! -d "$CM_BUILD_DIR/ios" ]; then
             npx cap add ios
           fi
+
           npx cap sync ios
-          cd ios/App
+
+          cd "$CM_BUILD_DIR/ios/App"
           pod install
 
-      - name: Apply uploaded signing files
-        script: xcode-project use-profiles
-
-      - name: Set valid iOS build number
+      - name: Set valid iOS version and build number
         script: |
-    #!/usr/bin/env bash
-    set -euo pipefail
+          #!/bin/bash
+          set -euo pipefail
 
-    IOS_BUILD_NUMBER="${PROJECT_BUILD_NUMBER:-${BUILD_NUMBER:-1}}"
+          IOS_BUILD_NUMBER="${PROJECT_BUILD_NUMBER:-${BUILD_NUMBER:-1}}"
+          INFO_PLIST="$CM_BUILD_DIR/ios/App/App/Info.plist"
 
-    if ! [[ "$IOS_BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
-      echo "Invalid iOS build number: $IOS_BUILD_NUMBER"
-      exit 1
-    fi
+          if [[ ! "$IOS_BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "Invalid build number: $IOS_BUILD_NUMBER"
+            exit 1
+          fi
 
-    echo "Setting iOS build number to $IOS_BUILD_NUMBER"
+          echo "Setting app version to $APP_VERSION"
+          echo "Setting build number to $IOS_BUILD_NUMBER"
 
-    /usr/libexec/PlistBuddy \
-      -c "Set :CFBundleVersion $IOS_BUILD_NUMBER" \
-      ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy \
+            -c "Set :CFBundleVersion $IOS_BUILD_NUMBER" \
+            "$INFO_PLIST" || \
+          /usr/libexec/PlistBuddy \
+            -c "Add :CFBundleVersion string $IOS_BUILD_NUMBER" \
+            "$INFO_PLIST"
 
-    /usr/libexec/PlistBuddy \
-      -c "Set :CFBundleShortVersionString 1.0.0" \
-      ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy \
+            -c "Set :CFBundleShortVersionString $APP_VERSION" \
+            "$INFO_PLIST" || \
+          /usr/libexec/PlistBuddy \
+            -c "Add :CFBundleShortVersionString string $APP_VERSION" \
+            "$INFO_PLIST"
 
-    echo "Verified versions:"
-    /usr/libexec/PlistBuddy \
-      -c "Print :CFBundleVersion" \
-      ios/App/App/Info.plist
+          echo "Verified CFBundleVersion:"
+          /usr/libexec/PlistBuddy \
+            -c "Print :CFBundleVersion" \
+            "$INFO_PLIST"
 
-    /usr/libexec/PlistBuddy \
-      -c "Print :CFBundleShortVersionString" \
-      ios/App/App/Info.plist
+          echo "Verified CFBundleShortVersionString:"
+          /usr/libexec/PlistBuddy \
+            -c "Print :CFBundleShortVersionString" \
+            "$INFO_PLIST"
+
+      - name: Apply provisioning profile
+        script: |
+          #!/bin/bash
+          set -e
+          xcode-project use-profiles
 
       - name: Build signed IPA
         script: |
+          #!/bin/bash
+          set -e
+
           xcode-project build-ipa \
             --workspace "$CM_BUILD_DIR/$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
@@ -83,3 +114,5 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
