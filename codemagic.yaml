@@ -11,6 +11,9 @@ workflows:
       node: 22
       xcode: latest
       cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.davidwis.moonlightmix
       vars:
         BUNDLE_ID: com.davidwis.moonlightmix
         XCODE_WORKSPACE: ios/App/App.xcworkspace
@@ -18,41 +21,22 @@ workflows:
 
     scripts:
       - name: Install dependencies
-        script: |
-          npm install
+        script: npm install
 
       - name: Type-check and build web app
-        script: |
-          npm run build
+        script: npm run build
 
       - name: Create and sync Capacitor iOS project
         script: |
           if [ ! -d ios ]; then
             npx cap add ios
           fi
-
           npx cap sync ios
-
           cd ios/App
           pod install
 
-      - name: Initialize signing keychain
-        script: |
-          keychain initialize
-
-      - name: Fetch or create App Store signing files
-        script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-
-      - name: Add signing certificate to keychain
-        script: |
-          keychain add-certificates
-
-      - name: Apply provisioning profile
-        script: |
-          xcode-project use-profiles
+      - name: Apply uploaded signing files
+        script: xcode-project use-profiles
 
       - name: Set unique build number
         script: |
@@ -73,5 +57,3 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
-        submit_to_app_store: false
