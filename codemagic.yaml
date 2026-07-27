@@ -38,10 +38,36 @@ workflows:
       - name: Apply uploaded signing files
         script: xcode-project use-profiles
 
-      - name: Set unique build number
+      - name: Set valid iOS build number
         script: |
-          cd ios/App
-          agvtool new-version -all "$CM_BUILD_NUMBER"
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    IOS_BUILD_NUMBER="${PROJECT_BUILD_NUMBER:-${BUILD_NUMBER:-1}}"
+
+    if ! [[ "$IOS_BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
+      echo "Invalid iOS build number: $IOS_BUILD_NUMBER"
+      exit 1
+    fi
+
+    echo "Setting iOS build number to $IOS_BUILD_NUMBER"
+
+    /usr/libexec/PlistBuddy \
+      -c "Set :CFBundleVersion $IOS_BUILD_NUMBER" \
+      ios/App/App/Info.plist
+
+    /usr/libexec/PlistBuddy \
+      -c "Set :CFBundleShortVersionString 1.0.0" \
+      ios/App/App/Info.plist
+
+    echo "Verified versions:"
+    /usr/libexec/PlistBuddy \
+      -c "Print :CFBundleVersion" \
+      ios/App/App/Info.plist
+
+    /usr/libexec/PlistBuddy \
+      -c "Print :CFBundleShortVersionString" \
+      ios/App/App/Info.plist
 
       - name: Build signed IPA
         script: |
