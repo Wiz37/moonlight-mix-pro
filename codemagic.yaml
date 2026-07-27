@@ -14,7 +14,7 @@ workflows:
 
       ios_signing:
         certificates:
-          - moonlight_mix_distribution
+          - corgi_hop_distribution
         provisioning_profiles:
           - moonlight_mix_appstore
 
@@ -27,19 +27,19 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
-          #!/bin/bash
+          #!/usr/bin/env bash
           set -e
           npm install
 
       - name: Type-check and build web app
         script: |
-          #!/bin/bash
+          #!/usr/bin/env bash
           set -e
           npm run build
 
       - name: Create and sync Capacitor iOS project
         script: |
-          #!/bin/bash
+          #!/usr/bin/env bash
           set -e
 
           if [ ! -d "$CM_BUILD_DIR/ios" ]; then
@@ -53,26 +53,19 @@ workflows:
 
       - name: Set valid iOS version and build number
         script: |
-          #!/bin/bash
+          #!/usr/bin/env bash
           set -euo pipefail
 
-          IOS_BUILD_NUMBER="${PROJECT_BUILD_NUMBER:-${BUILD_NUMBER:-1}}"
+          IOS_BUILD_NUMBER="${BUILD_NUMBER:-1}"
           INFO_PLIST="$CM_BUILD_DIR/ios/App/App/Info.plist"
 
           if [[ ! "$IOS_BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
-            echo "Invalid build number: $IOS_BUILD_NUMBER"
+            echo "Invalid BUILD_NUMBER: $IOS_BUILD_NUMBER"
             exit 1
           fi
 
-          echo "Setting app version to $APP_VERSION"
+          echo "Setting version to $APP_VERSION"
           echo "Setting build number to $IOS_BUILD_NUMBER"
-
-          /usr/libexec/PlistBuddy \
-            -c "Set :CFBundleVersion $IOS_BUILD_NUMBER" \
-            "$INFO_PLIST" || \
-          /usr/libexec/PlistBuddy \
-            -c "Add :CFBundleVersion string $IOS_BUILD_NUMBER" \
-            "$INFO_PLIST"
 
           /usr/libexec/PlistBuddy \
             -c "Set :CFBundleShortVersionString $APP_VERSION" \
@@ -81,25 +74,32 @@ workflows:
             -c "Add :CFBundleShortVersionString string $APP_VERSION" \
             "$INFO_PLIST"
 
-          echo "Verified CFBundleVersion:"
           /usr/libexec/PlistBuddy \
-            -c "Print :CFBundleVersion" \
+            -c "Set :CFBundleVersion $IOS_BUILD_NUMBER" \
+            "$INFO_PLIST" || \
+          /usr/libexec/PlistBuddy \
+            -c "Add :CFBundleVersion string $IOS_BUILD_NUMBER" \
             "$INFO_PLIST"
 
-          echo "Verified CFBundleShortVersionString:"
+          echo "Verified marketing version:"
           /usr/libexec/PlistBuddy \
             -c "Print :CFBundleShortVersionString" \
             "$INFO_PLIST"
 
+          echo "Verified build number:"
+          /usr/libexec/PlistBuddy \
+            -c "Print :CFBundleVersion" \
+            "$INFO_PLIST"
+
       - name: Apply provisioning profile
         script: |
-          #!/bin/bash
+          #!/usr/bin/env bash
           set -e
           xcode-project use-profiles
 
       - name: Build signed IPA
         script: |
-          #!/bin/bash
+          #!/usr/bin/env bash
           set -e
 
           xcode-project build-ipa \
