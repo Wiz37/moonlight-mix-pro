@@ -14,7 +14,7 @@
 .game-screen .bottle.moon-target:before{box-shadow:0 0 18px color-mix(in srgb,var(--choice-a) 75%,transparent)!important}
 .game-screen .bottle.moon-selected{animation:engineSelectedBreath 1.35s ease-in-out infinite!important}
 @keyframes engineStream{0%{opacity:0;transform:translateX(-50%) scaleY(0)}18%{opacity:1;transform:translateX(-50%) scaleY(1)}72%{opacity:1;transform:translateX(-50%) scaleY(1)}100%{opacity:0;transform:translateX(-50%) scaleY(.2)}}
-@keyframes engineDrop{0%{opacity:0;transform:translate(var(--drop-x),-8px) scale(.4)}20%{opacity:1}100%{opacity:0;transform:translate(calc(var(--drop-x)*.3),68px) scale(.75)}}
+@keyframes engineDrop{0%{opacity:0;transform:translate(var(--drop-x),-8px) scale(.4)}20%{opacity:1}100%{opacity:0;transform:translate(0,68px) scale(.75)}}
 @keyframes engineImpactRing{0%{opacity:1;transform:scale(.25)}100%{opacity:0;transform:scale(2.8)}}
 @keyframes engineImpactSpark{0%{opacity:1;transform:rotate(var(--impact-angle)) translateX(0) scale(1)}100%{opacity:0;transform:rotate(var(--impact-angle)) translateX(48px) scale(.2)}}
 @keyframes engineSelectedBreath{0%,100%{filter:drop-shadow(0 0 16px var(--choice-a)) brightness(1.08)}50%{filter:drop-shadow(0 0 29px var(--choice-a)) brightness(1.22)}}
